@@ -108,6 +108,57 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
               <X size={24} />
             </button>
 
+            {/* Breadcrumbs */}
+            <div className="px-8 md:px-16 pt-12 pb-4 border-b border-gold/10">
+              <div className="flex items-center justify-between max-w-2xl mx-auto">
+                {[
+                  { id: 'details', label: 'Details' },
+                  { id: 'calendar', label: 'Calendar' },
+                  { id: 'review', label: 'Review' },
+                  { id: 'success', label: 'Success' }
+                ].map((s, i, arr) => {
+                  const stepOrder = ['details', 'calendar', 'review', 'success'];
+                  const currentIndex = stepOrder.indexOf(step);
+                  const targetIndex = stepOrder.indexOf(s.id as Step);
+                  const isActive = step === s.id;
+                  const isCompleted = currentIndex > targetIndex;
+                  const isClickable = targetIndex < currentIndex && step !== 'success';
+
+                  return (
+                    <React.Fragment key={s.id}>
+                      <button
+                        disabled={!isClickable}
+                        onClick={() => setStep(s.id as Step)}
+                        className={`group flex flex-col items-center gap-2 transition-all ${
+                          isClickable ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] transition-all duration-500 ${
+                          isActive 
+                            ? 'bg-gold border-gold text-luxury-black font-bold scale-110' 
+                            : isCompleted
+                              ? 'bg-gold/20 border-gold/40 text-gold'
+                              : 'border-nude/20 text-nude/40'
+                        }`}>
+                          {isCompleted ? <Check size={14} /> : i + 1}
+                        </div>
+                        <span className={`text-[8px] uppercase tracking-[0.2em] transition-colors ${
+                          isActive ? 'text-gold font-bold' : isCompleted ? 'text-nude/60' : 'text-nude/20'
+                        }`}>
+                          {s.label}
+                        </span>
+                      </button>
+                      {i < arr.length - 1 && (
+                        <div className={`h-[1px] flex-1 mx-4 transition-colors duration-700 ${
+                          currentIndex > i ? 'bg-gold/40' : 'bg-nude/10'
+                        }`} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="flex-1 overflow-y-auto no-scrollbar p-8 md:p-16">
               {step === 'details' && (
                 <motion.div
