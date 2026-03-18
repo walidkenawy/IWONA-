@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'motion/react';
+import { HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import Navbar from './components/Navbar';
@@ -15,6 +16,7 @@ import Footer from './components/Footer';
 import StoryPage from './pages/StoryPage';
 import ServicesPage from './pages/ServicesPage';
 import ChatBot from './components/ChatBot';
+import SEO from './components/SEO';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -27,6 +29,10 @@ function ScrollToTop() {
 function HomePage() {
   return (
     <main>
+      <SEO 
+        title="SPA FOR SOUL | Luxury Wellness & Spiritual Sanctuary"
+        description="Experience a celestial journey of transformation at SPA FOR SOUL. Luxury wellness, spiritual rituals, and sacred sanctuary for your inner being."
+      />
       <Hero />
       
       <About />
@@ -58,7 +64,7 @@ export default function App() {
       anchor.addEventListener('click', function (e) {
         e.preventDefault();
         const targetId = this.getAttribute('href');
-        if (!targetId) return;
+        if (!targetId || targetId === '#') return;
         const targetElement = document.querySelector(targetId);
         if (targetElement) {
           targetElement.scrollIntoView({
@@ -70,11 +76,12 @@ export default function App() {
   }, []);
 
   return (
-    <CartProvider>
-      <WishlistProvider>
-        <Router>
-          <ScrollToTop />
-          <div className="relative selection:bg-gold selection:text-luxury-black">
+    <HelmetProvider>
+      <CartProvider>
+        <WishlistProvider>
+          <Router>
+            <ScrollToTop />
+            <div className="relative selection:bg-gold selection:text-luxury-black">
             {/* Progress Bar */}
             <motion.div
               className="fixed top-0 left-0 right-0 h-[2px] bg-gold z-[100] origin-left"
@@ -111,5 +118,6 @@ export default function App() {
         </Router>
       </WishlistProvider>
     </CartProvider>
-  );
+  </HelmetProvider>
+);
 }

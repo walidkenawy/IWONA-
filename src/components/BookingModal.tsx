@@ -12,7 +12,7 @@ interface BookingModalProps {
   selectedServiceId?: string | null;
 }
 
-type Step = 'details' | 'calendar' | 'success';
+type Step = 'details' | 'calendar' | 'review' | 'success';
 
 export default function BookingModal({ isOpen, onClose, selectedServiceId }: BookingModalProps) {
   const { t } = useTranslation();
@@ -31,6 +31,15 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
   const timeSlots = [
     '09:00', '11:00', '13:00', '15:00', '17:00', '19:00'
   ];
+
+  // Simulated availability logic
+  const isTimeSlotAvailable = (date: Date | null, time: string) => {
+    if (!date) return false;
+    const timeIndex = timeSlots.indexOf(time);
+    // Deterministic pseudo-random availability based on date and time
+    const seed = date.getDate() + date.getMonth() + timeIndex;
+    return seed % 4 !== 0; // Roughly 75% availability
+  };
 
   useEffect(() => {
     if (selectedServiceId) {
@@ -51,9 +60,12 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
     setStep('calendar');
   };
 
-  const handleFinalSubmit = async () => {
+  const handleReviewStep = () => {
     if (!selectedDate || !selectedTime) return;
-    
+    setStep('review');
+  };
+
+  const handleFinalSubmit = async () => {
     setIsSending(true);
     
     // Simulate email sending
@@ -61,18 +73,12 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
     
     console.log('Booking Confirmed:', {
       ...formData,
-      date: format(selectedDate, 'yyyy-MM-dd'),
+      date: format(selectedDate!, 'yyyy-MM-dd'),
       time: selectedTime
     });
     
     setIsSending(false);
     setStep('success');
-    
-    setTimeout(() => {
-      onClose();
-      // Reset after close
-      setTimeout(() => setStep('details'), 500);
-    }, 4000);
   };
 
   return (
@@ -92,7 +98,7 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={`relative w-full h-full md:h-auto md:max-w-5xl bg-[#0a0a0a] border-gold/20 flex flex-col overflow-hidden ${
-              step === 'calendar' ? 'md:h-[90vh]' : ''
+              step === 'calendar' || step === 'review' || step === 'success' ? 'md:h-[90vh]' : ''
             }`}
           >
             <button 
@@ -203,10 +209,26 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 flex-1">
                     <div className="space-y-6">
-                      <h3 className="text-2xl font-serif text-nude-light italic">Select a Sacred Date</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-serif text-nude-light italic">Select a Sacred Date</h3>
+                        {selectedDate && (
+                          <button 
+                            onClick={() => {
+                              setSelectedDate(null);
+                              setSelectedTime(null);
+                            }}
+                            className="text-[10px] uppercase tracking-[0.2em] text-gold/60 hover:text-gold transition-colors"
+                          >
+                            Clear Date
+                          </button>
+                        )}
+                      </div>
                       <div className="bg-white/5 p-6 border border-gold/10">
                         <Calendar 
-                          onChange={(val) => setSelectedDate(val as Date)} 
+                          onChange={(val) => {
+                            setSelectedDate(val as Date);
+                            setSelectedTime(null);
+                          }} 
                           value={selectedDate}
                           minDate={new Date()}
                           className="luxury-calendar"
@@ -215,21 +237,42 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
                     </div>
 
                     <div className="space-y-8">
-                      <h3 className="text-2xl font-serif text-nude-light italic">Select Your Alignment Time</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {timeSlots.map((time) => (
-                          <button
-                            key={time}
-                            onClick={() => setSelectedTime(time)}
-                            className={`py-4 border text-[11px] tracking-[0.2em] transition-all ${
-                              selectedTime === time 
-                                ? 'bg-gold border-gold text-luxury-black font-bold' 
-                                : 'border-nude/20 text-nude/60 hover:border-gold/50 hover:text-nude-light'
-                            }`}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-serif text-nude-light italic">Select Your Alignment Time</h3>
+                        {selectedTime && (
+                          <button 
+                            onClick={() => setSelectedTime(null)}
+                            className="text-[10px] uppercase tracking-[0.2em] text-gold/60 hover:text-gold transition-colors"
                           >
-                            {time}
+                            Clear Time
                           </button>
-                        ))}
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {timeSlots.map((time) => {
+                          const available = isTimeSlotAvailable(selectedDate, time);
+                          return (
+                            <button
+                              key={time}
+                              disabled={!available || !selectedDate}
+                              onClick={() => setSelectedTime(time)}
+                              className={`py-4 border text-[11px] tracking-[0.2em] transition-all relative overflow-hidden ${
+                                selectedTime === time 
+                                  ? 'bg-gold border-gold text-luxury-black font-bold' 
+                                  : available && selectedDate
+                                    ? 'border-nude/20 text-nude/60 hover:border-gold/50 hover:text-nude-light'
+                                    : 'border-nude/5 text-nude/20 cursor-not-allowed bg-white/[0.02]'
+                              }`}
+                            >
+                              {time}
+                              {!available && selectedDate && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="w-full h-[1px] bg-nude/10 rotate-12" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
 
                       {selectedDate && selectedTime && (
@@ -249,15 +292,10 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
                           </div>
                           
                           <button
-                            onClick={handleFinalSubmit}
-                            disabled={isSending}
-                            className="w-full py-5 bg-gold text-luxury-black text-[11px] uppercase tracking-[0.4em] font-bold gold-glow flex items-center justify-center gap-3 disabled:opacity-50"
+                            onClick={handleReviewStep}
+                            className="w-full py-5 bg-gold text-luxury-black text-[11px] uppercase tracking-[0.4em] font-bold gold-glow flex items-center justify-center gap-3"
                           >
-                            {isSending ? (
-                              <>Sending Application... <Mail className="animate-pulse" size={16} /></>
-                            ) : (
-                              <>Confirm & Send Application <Check size={16} /></>
-                            )}
+                            Review Application <ArrowRight size={16} />
                           </button>
                         </motion.div>
                       )}
@@ -266,20 +304,123 @@ export default function BookingModal({ isOpen, onClose, selectedServiceId }: Boo
                 </motion.div>
               )}
 
+              {step === 'review' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <button 
+                    onClick={() => setStep('calendar')}
+                    className="flex items-center gap-2 text-gold text-[10px] uppercase tracking-[0.3em] mb-8 hover:text-gold-light transition-colors"
+                  >
+                    <ArrowLeft size={14} /> Back to Calendar
+                  </button>
+
+                  <div className="text-center mb-12">
+                    <span className="text-gold text-[10px] uppercase tracking-[0.5em] mb-4 block">Final Step</span>
+                    <h2 className="text-3xl md:text-5xl font-serif text-nude-light mb-4">
+                      Review <span className="italic">Application</span>
+                    </h2>
+                    <p className="text-nude/60 font-light tracking-wide text-sm">
+                      Please verify your ritual details before we finalize your sanctuary reservation.
+                    </p>
+                  </div>
+
+                  <div className="space-y-6 bg-white/5 border border-gold/10 p-8 md:p-10 mb-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Full Name</p>
+                        <p className="text-nude-light font-light">{formData.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Email Address</p>
+                        <p className="text-nude-light font-light">{formData.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Selected Ritual</p>
+                        <p className="text-nude-light font-serif italic">{formData.experience}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Scheduled Time</p>
+                        <p className="text-nude-light font-serif italic">
+                          {selectedDate && format(selectedDate, 'MMMM do, yyyy')} at {selectedTime}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-6 border-t border-gold/10">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-2">Your Intention</p>
+                      <p className="text-nude/80 font-light leading-relaxed italic">"{formData.intention}"</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleFinalSubmit}
+                    disabled={isSending}
+                    className="w-full py-5 bg-gold text-luxury-black text-[11px] uppercase tracking-[0.4em] font-bold gold-glow flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {isSending ? (
+                      <>Sending Application... <Mail className="animate-pulse" size={16} /></>
+                    ) : (
+                      <>Confirm & Send Application <Check size={16} /></>
+                    )}
+                  </button>
+                </motion.div>
+              )}
+
               {step === 'success' && (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="py-20 text-center"
+                  className="py-10 text-center max-w-2xl mx-auto"
                 >
                   <div className="w-24 h-24 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-10 border border-gold/20">
                     <Check className="text-gold" size={48} />
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-serif text-nude-light mb-6 italic">Ritual Application Sent</h3>
-                  <p className="text-nude/60 font-light tracking-widest text-sm max-w-md mx-auto leading-relaxed">
-                    A celestial confirmation has been sent to <span className="text-gold">{formData.email}</span>. 
+                  <h3 className="text-4xl md:text-5xl font-serif text-nude-light mb-4 italic">Thank You</h3>
+                  <p className="text-gold text-[10px] uppercase tracking-[0.5em] mb-8 block">Ritual Application Confirmed</p>
+                  
+                  <div className="space-y-6 bg-white/5 border border-gold/10 p-8 md:p-10 mb-10 text-left">
+                    <h4 className="text-nude-light font-serif italic text-xl mb-6 border-b border-gold/10 pb-4">Booking Summary</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Guest</p>
+                        <p className="text-nude-light font-light">{formData.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Email</p>
+                        <p className="text-nude-light font-light">{formData.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Ritual</p>
+                        <p className="text-nude-light font-serif italic">{formData.experience}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gold mb-1">Alignment Time</p>
+                        <p className="text-nude-light font-serif italic">
+                          {selectedDate && format(selectedDate, 'MMMM do, yyyy')} at {selectedTime}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-nude/60 font-light tracking-widest text-sm mb-10 leading-relaxed">
+                    A celestial confirmation has been sent to your email. 
                     Our concierge will contact you shortly to finalize your transformation.
                   </p>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onClose();
+                      setTimeout(() => setStep('details'), 500);
+                    }}
+                    className="w-full py-5 bg-gold text-luxury-black text-[11px] uppercase tracking-[0.4em] font-bold gold-glow"
+                  >
+                    Return to Sanctuary
+                  </motion.button>
                 </motion.div>
               )}
             </div>

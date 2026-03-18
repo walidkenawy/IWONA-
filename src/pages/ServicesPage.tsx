@@ -4,12 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { SERVICES } from '../constants';
 import { ArrowLeft, CheckCircle2, Clock, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 export default function ServicesPage() {
   const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-luxury-black pt-32 pb-20 px-6">
+      <SEO 
+        title="Sacred Rituals & Services | SPA FOR SOUL"
+        description="Explore our collection of luxury spiritual rituals, from shamanic journeys to angelic healing. Book your private immersion at our sanctuary."
+        keywords="spiritual rituals, shamanic healing, angelic journey, luxury spa services, wellness treatments"
+      />
       <div className="max-w-7xl mx-auto">
         <Link 
           to="/" 

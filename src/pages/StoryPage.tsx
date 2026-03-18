@@ -3,12 +3,18 @@ import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Sparkles, Heart, Shield, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 export default function StoryPage() {
   const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-luxury-black pt-32 pb-20 px-6">
+      <SEO 
+        title="Our Sacred Story | SPA FOR SOUL"
+        description="Discover the genesis and values of SPA FOR SOUL. Learn about our mission to provide a luxury spiritual sanctuary for inner transformation."
+        keywords="spa story, wellness mission, spiritual values, sanctuary genesis"
+      />
       <div className="max-w-4xl mx-auto">
         <Link 
           to="/" 
